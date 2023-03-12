@@ -1,11 +1,16 @@
 import logging
+from pprint import pprint
+
 import typer
 import os
 import yaml
 import json
 import sys
 
-global cfg
+from . import data
+
+cfg = {'scale': 1, 'ts': 1}
+data_aux = None
 
 
 def config_load(filepath: str):
@@ -28,8 +33,10 @@ def config_get(config: dict, name: str, default: any = None):
 
 
 def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"),
-                           config: str = None):
-    global cfg
+                           config: str = typer.Option(None, help="File path that contains default options values."),
+                           scale: float = typer.Option(None, help="Plot scale for the time axis [s]."),
+                           ts: float = typer.Option(None, help="Default sample period of the data [s].")):
+    global cfg, data_aux
     lvl = logging.INFO
     fmt = "%(levelname)s: %(message)s"
     if verbose:
@@ -38,3 +45,54 @@ def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"
 
     if config:
         cfg = config_load(filepath=config)
+
+    # Override scale if it's provided in the options.
+    if scale is not None:
+        cfg['scale'] = scale
+
+    # Override sample period if it's provided in the options.
+    if ts is not None:
+        cfg['ts'] = ts
+
+    if not sys.stdin.isatty():
+        info("loading data from stdin...")
+        try:
+            data_aux = json.load(sys.stdin)
+        except json.JSONDecodeError as e:
+            error(f"Error decoding JSON input: {e}")
+        if not validate_data(data_aux):
+            error(f"Input data did not pass validation tests!")
+
+
+def validate_data(datatest: dict):
+    return True
+
+
+def error(*args):
+    if len(args) == 1:
+        logging.error(args[0])
+    else:
+        logging.error(*args)
+    sys.exit(-1)
+
+
+def warning(*args):
+    if len(args) == 1:
+        logging.warning(args[0])
+    else:
+        logging.warning(*args)
+    return
+
+
+def info(*args):
+    if len(args) == 1:
+        logging.info(args[0])
+    else:
+        logging.info(*args)
+    return
+
+
+def finish(data: dict):
+    if sys.stdout.isatty():
+        return
+    print(json.dumps(data))
