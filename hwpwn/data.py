@@ -415,6 +415,7 @@ def load(filepath: str, format: str = None, xscale: float = 1e-6):
         data_aux = load_pklz(filepath=filepath)
     else:
         raise ValueError(f"Invalid or unsupported file extension ({filetype})!")
+
     common.finish(data_aux)
 
 
