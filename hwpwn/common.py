@@ -7,8 +7,6 @@ import yaml
 import json
 import sys
 
-from . import data
-
 cfg = {'scale': 1, 'ts': 1}
 data_aux = None
 
@@ -37,10 +35,10 @@ def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"
                            scale: float = typer.Option(None, help="Plot scale for the time axis [s]."),
                            ts: float = typer.Option(None, help="Default sample period of the data [s].")):
     global cfg, data_aux
-    lvl = logging.INFO
+    lvl = logging.ERROR
     fmt = "%(levelname)s: %(message)s"
     if verbose:
-        lvl = logging.DEBUG
+        lvl = logging.INFO
     logging.basicConfig(level=lvl, format=fmt)
 
     if config:
@@ -54,14 +52,19 @@ def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"
     if ts is not None:
         cfg['ts'] = ts
 
-    if not sys.stdin.isatty():
-        info("loading data from stdin...")
-        try:
-            data_aux = json.load(sys.stdin)
-        except json.JSONDecodeError as e:
-            error(f"Error decoding JSON input: {e}")
-        if not validate_data(data_aux):
-            error(f"Input data did not pass validation tests!")
+    if sys.stdin.isatty():
+        return
+
+    stdin = sys.stdin.read().lstrip()
+    if not len(stdin):
+        return
+    logging.info("loading data from stdin...")
+    try:
+        data_aux = json.loads(stdin)
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding JSON input: {e}")
+    if not validate_data(data_aux):
+        logging.error(f"Input data did not pass validation tests!")
 
 
 def validate_data(datatest: dict):
@@ -94,5 +97,6 @@ def info(*args):
 
 def finish(data: dict):
     if sys.stdout.isatty():
+        print("Note: use a pipe if you want to see the output of the command.")
         return
     print(json.dumps(data))
