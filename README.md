@@ -1,11 +1,12 @@
 # hwpwn
-Hardware pwning tool
+
+Hardware Pwning tool.
 
 # Installation
 
     pip install hwpwn
 
-# Userguide
+# User Guide
 
 Let's start by creating a dummy data file. The first axis (usually time but not necessary) is assumed to be the
 first column. The first row is the header, containing the column names.
@@ -37,7 +38,9 @@ So, let's say we want to subtract vector `a` and `c`, store the result in `ac` a
 The `--append` means it will add a new signal to the list instead of creating a new list of signals. Now this looks
 good, but how can we plot it?
 
-    $ hwpwn data load test.csv | hwpwn data subtract a c ac --append | hwpwn plot time --ylabel Probes --yunit V
+    $ hwpwn data load test.csv | \
+    hwpwn data subtract a c ac --append | \
+    hwpwn plot time --ylabel Probes --yunit V
 
 Which should show the window as in the following screenshot.
 

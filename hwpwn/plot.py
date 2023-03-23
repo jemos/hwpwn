@@ -8,9 +8,9 @@ app = typer.Typer(callback=common.default_typer_callback)
 
 
 @app.command()
-def time(title: str = None, grid: bool = False, pngfile: str = None, legend: bool = False, alpha: float = 1.0,
+def time(title: str = None, grid: bool = True, pngfile: str = None, legend: bool = True, alpha: float = 1.0,
          ylabel: str = None, yscale: float = 1.0, xunit: str = 'NA', yunit: str = 'NA', xlabel: str = 'Time',
-         linewidth: float = 0.5):
+         linewidth: float = 1.0):
     data = common.data_aux
 
     SMALL_SIZE = 14

@@ -96,7 +96,9 @@ def info(*args):
 
 
 def finish(data: dict):
+    global data_aux
     if sys.stdout.isatty():
-        print("Note: use a pipe if you want to see the output of the command.")
+        logging.info("Note: use a pipe if you want to see the output of the command.")
+        data_aux = data
         return
     print(json.dumps(data))
