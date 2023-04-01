@@ -23,6 +23,15 @@ def config_load(filepath: str):
     sys.exit(-1)
 
 
+def config_from_data(config: dict):
+    global cfg
+    if 'ts' in config:
+        cfg['ts'] = float(config['ts'])
+    if 'scale' in config:
+        cfg['scale'] = float(config['scale'])
+    return
+
+
 def config_get(config: dict, name: str, default: any = None):
     if name in config:
         return config[name]
