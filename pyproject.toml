@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "hwpwn"
+version = "0.1.0"
+description = "Hardware security testing tool"
+authors = ["jemos <contact@jemos.net>"]
+readme = "README.md"  # If you have a README file, otherwise remove this line
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = "^0.7.0"
+PyYAML = "^6.0"
+PyWavelets = "^1.4.1"
+scipy = "^1.10.1"
+seaborn = "^0.12.2"
+pandas = "^1.5.3"
+matplotlib = "^3.7.1"
+python-dateutil = "^2.8.2"
+
+[tool.poetry.dev-dependencies]
+# Add development dependencies here, for example:
+# pytest = "^6.0"
+
+[build-system]
+requires = ["poetry-core", "wheel"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+hwpwn = "hwpwn.hwpwn:app"
