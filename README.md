@@ -1,15 +1,19 @@
 # hwpwn
 
-Hardware Pwning tool.
+A user-friendly tool designed to facilitate hardware security attacks. The aim is to provide a simple interface with 
+commands that cover multiple steps typically involved in hardware security attacks. Plus, it makes repeating attacks 
+or changing details very easy, so you can quickly see what happens when you tweak something.
 
-# Installation
+# Quickstart
 
-    pip install hwpwn
+First install the package with pip:
 
-# User Guide
+    $ pip install hwpwn --user
 
-Let's start by creating a dummy data file. The first axis (usually time but not necessary) is assumed to be the
-first column. The first row is the header, containing the column names.
+The hwpwn has multiple commands which can be called in chain, using shell pipe. Alternatively, you can write a flow
+YAML file which has the commands described in textual format and run the flow with hwpwn client.
+
+Create a dummy data file:
 
     $ cat <<EOF > test.csv
     t,a,b,c
@@ -18,32 +22,65 @@ first column. The first row is the header, containing the column names.
     3,9,2,1
     EOF
 
-Let's make hwpwn read this data and dump it:
+To use in piped commands one can, for example:
 
-    $ hwpwn data load test.csv | cat
-    {"x_axis": [1.0, 2.0, 3.0], "signals": [{"name": "a", "vector": [3.0, 3.0, 9.0]}, 
-    {"name": "b", "vector": [3.0, 4.0, 2.0]}, {"name": "c", "vector": [4.0, 5.0, 1.0]}], 
-    "triggers": [], "ts": 1}
+    $ hwpwn data load test.csv | hwpwn data subtract a b ab --append | cat
+    {"x_axis": [1.0, 2.0, 3.0], "signals": [{"name": "a", "vector": [3.0, 3.0, 9.0]},
+    {"name": "b", "vector": [3.0, 4.0, 2.0]}, {"name": "c", "vector": [4.0, 5.0, 1.0]},
+    {"name": "ab", "vector": [-1.0, -2.0, 8.0]}], "triggers": [], "ts": 1}
 
-It will only output data of the last command if there is a pipe command. The hwpwn was designed in a way that one can
-pipe multiple commands in chain, or provide a flow configuration file with the sequence of commands in YAML format.
+If we wanted to execute these commands in a flow, we needed to create a flow YAML, let's say, `my_flow.yaml`:
 
-So, let's say we want to subtract vector `a` and `c`, store the result in `ac` and dump the result.
+    ---
+    options:
+      scale: 1e-6
+      ts: 4e-9
+      description: |
+        My long description. It can take a single line or multiple lines.
+        Line number two.
+    operations:
+      - data.load:
+          filepath: test.csv
+      - data.subtract:
+          pos: a
+          neg: b
+          dest: ab
+          append: true
 
-    $ hwpwn data load test.csv | hwpwn data subtract a c ac --append | cat
+Now run hwpwn with:
+
+    $ hwpwn --verbose flow run test.yaml | cat
+    INFO: trying to load file test.csv ...
+    INFO: loaded 3 datapoints from test.csv.
+    INFO: found signal a
+    INFO: found signal b
+    INFO: found signal c
+    INFO: using sampling period of 4.0e-09 [s].
+    INFO: calculating signal subtract ab = a - b (append=True)
     {"x_axis": [1.0, 2.0, 3.0], "signals": [{"name": "a", "vector": [3.0, 3.0, 9.0]}, 
     {"name": "b", "vector": [3.0, 4.0, 2.0]}, {"name": "c", "vector": [4.0, 5.0, 1.0]}, 
-    {"name": "ac", "vector": [-1.0, -2.0, 8.0]}], "triggers": [], "ts": 1}
+    {"name": "ab", "vector": [0.0, -1.0, 7.0]}], "triggers": [], "ts": 4e-09}
 
-The `--append` means it will add a new signal to the list instead of creating a new list of signals. Now this looks
-good, but how can we plot it?
+I've used the `--verbose` flag which will make it show what is happening. If you don't pipe the output of hwpwn,
+it will not show the final data to avoid flooding the console. Thus, I've used a piped `cat` command.
 
-    $ hwpwn data load test.csv | \
-    hwpwn data subtract a c ac --append | \
-    hwpwn plot time --ylabel Probes --yunit V
+# Documentation
 
-Which should show the window as in the following screenshot.
+The documentation is built with Sphinx and deployed in Github Pages. The URL is https://jemos.github.io/hwpwn. 
 
-![Example plot](doc/figure1.png)
+# Final Words
 
-For more information about the commands please use the `--help`.
+This project is currently in its early stages of development, and as such, it may not be as comprehensive or
+polished as desired. However, it is a work in progress, and future enhancements are expected to improve
+its functionality and usability in hardware security analysis. Users are encouraged to provide feedback
+and contribute to the project's growth and refinement.
+
+# Next Features...
+
+Things I'd like to add in the future...
+
+  * `scope` commands for interacting with USB osciloscopes
+  * `spa` commands for simple power analysis
+  * `dpa` commands for differential power analysis
+  * `cpa` commands for correlation power analysis
+
