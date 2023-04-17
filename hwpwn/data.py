@@ -35,7 +35,6 @@ import gzip
 import io
 import math
 import os.path
-import pickle
 from pprint import pprint
 
 import numpy as np
@@ -43,6 +42,7 @@ import csv
 from scipy import signal
 import sys
 import typer
+import pywt
 
 from . import common
 
@@ -56,7 +56,7 @@ def gaussian_periodic_penalty(lag: int, period: int, sigma: float):
     abs_lag = np.abs(lag)
     min_distance = np.minimum(((abs_lag - period) % period),
                               (period - ((abs_lag - period) % period)))
-    penalty = np.exp(-((min_distance)**2) / (2 * sigma**2))
+    penalty = np.exp(-(min_distance**2) / (2 * sigma**2))
     penalty = np.where(abs_lag < period / 2, 0, penalty)
     return penalty
 
@@ -173,8 +173,8 @@ def mwxcorr(winsize: str = '3.0e-6', mode: str = 'individual', function: str = '
     new_data['x_axis'] = x_axis
 
     for s_idx in range(0, len(data['signals'])):
-        signal = data['signals'][s_idx]
-        common.info(f"processing signal {signal['name']} ...")
+        sig = data['signals'][s_idx]
+        common.info(f"processing signal {sig['name']} ...")
 
         # remove DC component from signal
         # mean = np.mean(signal['vector'])
@@ -182,7 +182,7 @@ def mwxcorr(winsize: str = '3.0e-6', mode: str = 'individual', function: str = '
 
         # high-pass filter the signal at 7MHz
         # orig = butter_highpass_filter(orig, 4.0e6, 1.0 / data['ts'])
-        orig = signal['vector']
+        orig = sig['vector']
 
         vector = []
         corr_values = []
@@ -215,7 +215,7 @@ def mwxcorr(winsize: str = '3.0e-6', mode: str = 'individual', function: str = '
             if mode == 'consensus':
                 common.info("employing consensus lag based correction")
                 best_lag = max(set(corr_values), key=corr_values.count)
-                common.info(f"lagging signal {signal['name']} by {best_lag} points (most common)")
+                common.info(f"lagging signal {sig['name']} by {best_lag} points (most common)")
                 vector = np.roll(orig[:len(x_axis)], best_lag)
             elif mode == 'individual':
                 common.info("employing individual lag based corrections")
@@ -224,30 +224,30 @@ def mwxcorr(winsize: str = '3.0e-6', mode: str = 'individual', function: str = '
                     i_start = widx * winsizen
                     i_end = (widx + 1) * winsizen
                     sub_orig = orig[i_start:i_end]
-                    common.info(f"lagging signal {signal['name']} by {corr_value} points")
+                    common.info(f"lagging signal {sig['name']} by {corr_value} points")
                     aux = np.roll(sub_orig, corr_value)
                     vector = np.concatenate((vector, aux), axis=0)
                 common.info(f"average correlation lag value: %0.3f" % np.mean(corr_values))
             elif mode == 'average':
                 common.info("employing average lag based correction")
                 best_lag = np.mean(corr_values)
-                common.info(f"lagging signal {signal['name']} by {best_lag} points (most common)")
+                common.info(f"lagging signal {sig['name']} by {best_lag} points (most common)")
                 vector = np.roll(orig[:len(x_axis)], best_lag)
             else:
                 return common.error(f"invalid/unsupported mode provided ({mode})")
 
         # save generated signal
         common.info(f"new vector size {len(vector)}")
-        new_signal = {'name': signal['name'], 'vector': vector}
+        new_signal = {'name': sig['name'], 'vector': vector}
         new_data['signals'].append(new_signal)
 
     for s_idx in range(0, len(data['triggers'])):
-        signal = data['triggers'][s_idx]
-        common.info(f"adjusting trigger signal length {signal['name']} ...")
-        orig = signal['vector']
+        sig = data['triggers'][s_idx]
+        common.info(f"adjusting trigger signal length {sig['name']} ...")
+        orig = sig['vector']
         vector = orig[:len(x_axis)]
         common.info(f"new vector length {len(vector)}")
-        new_signal = {'name': signal['name'], 'vector': vector}
+        new_signal = {'name': sig['name'], 'vector': vector}
         new_data['triggers'].append(new_signal)
 
     common.finish(new_data)
@@ -473,7 +473,7 @@ def process_raw_table_ts(raw_data: list[list], xscale: float = 1e-6):
     return new_ts
 
 
-def process_raw_table_signals(header: list[str], raw_data: list[list], xscale: float = 1e-6):
+def process_raw_table_signals(header: list[str], raw_data: list[list]):
     """
     Internal function to process table data from header list and raw data information. The :paramref:`header` list is
     just a list of strings that correspond to the column names. The :paramref:`raw_data` is a list of rows. Each row
@@ -485,41 +485,30 @@ def process_raw_table_signals(header: list[str], raw_data: list[list], xscale: f
 
        >>> cols = ['t', 'a', 'b']
        >>> rows = [[1, 10, 11], [2, 11, 13], [3, 9, 15]]
-       >>> x_axis, signals, triggers = process_raw_table_signals(header=cols, raw_data=rows)
+       >>> s, t = process_raw_table_signals(header=cols, raw_data=rows)
 
     :param header: List of strings corresponding to the column names.
     :type header: list[str]
     :param raw_data: List of rows, where each row is another list of strings or numbers. The items in the row will be
                      converted to float.
     :type raw_data: list[list]
-    :param xscale: The x-axis scale to seconds. Each x-axis value will be multipled by `xscale` from
-                   and divided by `scale` parameter of configuration as follows:
-
-    .. math::
-       x_i' = x_i * \mathrm{xscale}/\mathrm{cfg\_scale}
-
-    So for example, if `cfg_scale` is 1e-6 (meaning that we want to use common unit of x-axis in microseconds),
-    and `xscale` is 1e-9 (meaning that the x-axis values units are in nanoseconds), and the CSV has the x-axis
-    (230.0, 250.0, 410.0) the data stored in memory will have the x-axis values (0.230, 0.250, 0.410).
     """
-    x_axis = [float(raw_data[i][0]) for i in range(0, len(raw_data))]
-
-    triggers = []
-    signals = []
+    trigs = []
+    sigs = []
     for i in range(1, len(raw_data[0])):
         # This is a trigger signal
         if '_T' == header[i][-2:] or '_HT' in header[i]:
             common.info(f"found trigger signal {header[i]}")
             tv = [float(raw_data[j][i]) for j in range(0, len(raw_data))]
-            triggers.append({'name': header[i], 'vector': tv})
+            trigs.append({'name': header[i], 'vector': tv})
             continue
 
         # This is a normal signal
         common.info(f"found signal {header[i]}")
         tv = [float(raw_data[j][i]) for j in range(0, len(raw_data))]
-        signals.append({'name': header[i], 'vector': tv})
+        sigs.append({'name': header[i], 'vector': tv})
 
-    return x_axis, signals, triggers
+    return signals, triggers
 
 
 @app.command(help="Loads a CSV file into a data structure that is easier to use for signal processing and plotting. "
@@ -528,7 +517,7 @@ def process_raw_table_signals(header: list[str], raw_data: list[list], xscale: f
                   "or characters \"_HT\", it's considered a trigger signal. There can be more than one trigger "
                   "signal in the file.")
 def load_csv(filepath: str, xscale: float = 1e-6):
-    """
+    r"""
     Loads a CSV file into a data structure that is easier to use for signal processing and plotting. This function
     expects a CSV with the time in the first column and signal voltages in the following columns. The first line
     must have the signal labels. If the label starts with character `T`, it's considered to be a trigger signal.
@@ -555,17 +544,18 @@ def load_csv(filepath: str, xscale: float = 1e-6):
         raw_data = list(cr)
 
     common.info(f"loaded {len(raw_data)} datapoints from {filepath}.")
-    x_axis, signals, triggers = process_raw_table_signals(header=header, raw_data=raw_data, xscale=xscale)
+    sigs, trigs = process_raw_table_signals(header=header, raw_data=raw_data)
     new_ts = process_raw_table_ts(raw_data=raw_data, xscale=xscale)
+    x_axis = np.multiply([float(raw_data[i][0]) for i in range(0, len(raw_data))], new_ts)
 
-    return {'x_axis': x_axis, 'signals': signals, 'triggers': triggers, 'ts': new_ts}
+    return {'x_axis': x_axis, 'signals': sigs, 'triggers': trigs, 'ts': new_ts}
 
 
 @app.command(help="This command is very similar to the load_csv command, except that the CSV file is compressed using "
                   "gzip. The first column is loaded as the x-axis, and signal voltages (including the triggers) are "
                   "loaded from the following columns.")
 def load_csvz(filepath: str, xscale: float = 1e-6):
-    """
+    r"""
     This command is very similar to the :func:`load_csv` command, except that the CSV file is compressed using gzip.
     The first column is loaded as the x-axis, and signal voltages (including the triggers) are loaded from the
     following columns.
@@ -595,9 +585,11 @@ def load_csvz(filepath: str, xscale: float = 1e-6):
         raw_data = list(cr)
 
     common.info(f"loaded {len(raw_data)} datapoints from {filepath}.")
-    x_axis, signals, triggers = process_raw_table_signals(header=header, raw_data=raw_data, xscale=xscale)
+    sigs, trigs = process_raw_table_signals(header=header, raw_data=raw_data)
     new_ts = process_raw_table_ts(raw_data=raw_data, xscale=xscale)
-    return {'x_axis': x_axis, 'signals': signals, 'triggers': triggers, 'ts': new_ts}
+    x_axis = np.multiply([float(raw_data[i][0]) for i in range(0, len(raw_data))], new_ts)
+
+    return {'x_axis': x_axis, 'signals': sigs, 'triggers': trigs, 'ts': new_ts}
 
 
 def load_pklz(filepath: str, xscale: float = 1e-6):
@@ -608,7 +600,7 @@ def load_pklz(filepath: str, xscale: float = 1e-6):
                   "The format is automatically determined from the filename extension. To override the format "
                   "argument can be provided.")
 def load(filepath: str, format: str = 'auto', xscale: float = 1e-6, append: bool = False):
-    """
+    r"""
     Loads data from a local file. The file format can be: compressed CSV (.csv.gz) or CSV (.csv). The format is
     automatically determined from the filename extension. To override the format argument can be provided.
 
@@ -797,10 +789,10 @@ def multiply(source: str, multiplier: float, dest: str, append: bool = False):
                     'ts': data['ts']}
     else:
         new_data = {'x_axis': data['x_axis'], 'signals': [], 'triggers': data['triggers'], 'ts': data['ts']}
-    signal = data_get_signal(data, source)
+    sig = data_get_signal(data, source)
     new_data['signals'].append({
         'name': dest,
-        'vector': np.multiply(signal['vector'], multiplier).tolist()
+        'vector': np.multiply(sig['vector'], multiplier).tolist()
     })
     common.finish(new_data)
 
@@ -867,7 +859,7 @@ def normalize():
     new_data = {'x_axis': data['x_axis'], 'signals': [], 'triggers': data['triggers'], 'ts': data['ts']}
     for s in data['signals']:
         v = np.array(s['vector'])
-        v = (v - v.min()) / (v.max() - v.min())
+        v = (v - v.min(initial=None)) / (v.max(initial=None) - v.min(initial=None))
         new_signal = {'name': s['name'], 'vector': v.tolist()}
         new_data['signals'].append(new_signal)
     common.finish(new_data)
@@ -919,7 +911,6 @@ def denoise(wavelet: str = 'db8'):
        This function is experimental.
     """
     common.info("denoise called.")
-    import pywt
     data = common.data_aux
     new_data = {'x_axis': data['x_axis'], 'signals': [], 'triggers': data['triggers'], 'ts': data['ts']}
     for s in data['signals']:
@@ -931,4 +922,3 @@ def denoise(wavelet: str = 'db8'):
         denoised_signal = pywt.waverec(denoised_coeffs, wavelet)
         new_data['signals'].append({'vector': denoised_signal[1:], 'name': s['name']})
     common.finish(new_data)
-

@@ -35,7 +35,6 @@ examplified in the quick start).
 """
 
 import logging
-from pprint import pprint
 
 import typer
 import os
@@ -43,7 +42,7 @@ import yaml
 import json
 import sys
 
-cfg = {'scale': 1, 'ts': 1}
+cfg = {'scale': 1.0, 'ts': 1.0}
 data_aux = None
 f_verbose = False
 

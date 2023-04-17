@@ -6,8 +6,6 @@ This module commands provide a simple way to plot the data, while supporting dif
 * Cross-correlation plot.
 
 """
-from pprint import pprint
-
 import numpy as np
 import typer
 from matplotlib import pyplot as plt, cm
@@ -29,7 +27,8 @@ def time(title: str = None, grid: bool = True, pngfile: str = None, legend: str 
     :param title: The title of the plot, shown in the top center location.
     :param grid: If set to `True` enables grid.
     :param pngfile: If not `None`, will save the plot to a PNG file whose location is given by this parameter.
-    :param legend: If set to `True`, will show the legend of the signals plotted.
+    :param legend: If not None, will show the legend in the location specified: UR=upper-right, UL=upper-left,
+                   LR=lower-right, or LL=lower-left. By default it's set to UR (upper-right).
     :param alpha: A float number that sets the opacity of the signals plotted (0 completely transparent, 1.0 completely
                   visible.)
     :param ylabel: The label shown in the y-axis.
@@ -118,7 +117,7 @@ def time(title: str = None, grid: bool = True, pngfile: str = None, legend: str 
 
 
 @app.command()
-def xy(title: str = 'X-Y Plot', grid: bool = False, pngfile: str = None, legend: bool = False, alpha: float = 1.0,
+def xy(title: str = 'X-Y Plot', grid: bool = False, pngfile: str = None, legend: str = 'UR', alpha: float = 1.0,
        ylabel: str = None):
     data = common.data_aux
 
@@ -161,8 +160,15 @@ def xy(title: str = 'X-Y Plot', grid: bool = False, pngfile: str = None, legend:
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    if legend is True:
-        fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+    if legend is not False:
+        if legend == 'UR' or legend is True:
+            fig.legend(loc='upper right', bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+        elif legend == 'UL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes)
+        elif legend == 'BL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 0), bbox_transform=ax.transAxes)
+        elif legend == 'BR':
+            fig.legend(loc='upper left', bbox_to_anchor=(1, 0), bbox_transform=ax.transAxes)
     if title is not None:
         plt.title(title)
     if pngfile is not None:
@@ -187,9 +193,9 @@ def calc_fft(vector: list[float], ts: float):
 
 
 @app.command()
-def freq(title: str = 'Frequency Response', grid: bool = True, pngfile: str = None, legend: bool = True,
-         legend_location: str = 'upper right', ylabel: str = None, yunit: str = 'NA', ts: str = '1.0',
-         show: bool = True, yscale: str = 'log', xscale: str = 'log'):
+def freq(title: str = 'Frequency Response', grid: bool = True, pngfile: str = None, legend: str = 'UR',
+         ylabel: str = None, yunit: str = 'NA', ts: str = '1.0', show: bool = True, yscale: str = 'log',
+         xscale: str = 'log'):
     """
     Frequency response plot for all signals.
 
@@ -202,6 +208,11 @@ def freq(title: str = 'Frequency Response', grid: bool = True, pngfile: str = No
     :param yunit: A string with the y-axis unit name (i.e., V, mA, etc.)
     :param show: Whether or not to show the plot. If :paramref:`pngfile` is used and this is set to `False`, it will
                  not show the plot and will only save it to a PNG file.
+    :param legend: If not None, will show the legend in the location specified: UR=upper-right, UL=upper-left,
+                   LR=lower-right, or LL=lower-left. By default it's set to UR (upper-right).
+    :param ts: The sample period.
+    :param xscale: The type of scale to use for the x-axis. Accepted values are 'log' and 'linear'. By default it
+                   is set to 'log'.
     """
     data = common.data_aux
 
@@ -247,8 +258,15 @@ def freq(title: str = 'Frequency Response', grid: bool = True, pngfile: str = No
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    if legend:
-        fig.legend(loc=legend_location, bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+    if legend is not False:
+        if legend == 'UR' or legend is True:
+            fig.legend(loc='upper right', bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+        elif legend == 'UL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes)
+        elif legend == 'BL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 0), bbox_transform=ax.transAxes)
+        elif legend == 'BR':
+            fig.legend(loc='upper left', bbox_to_anchor=(1, 0), bbox_transform=ax.transAxes)
     if title is not None:
         plt.title(title)
     if pngfile is not None:
@@ -260,7 +278,7 @@ def freq(title: str = 'Frequency Response', grid: bool = True, pngfile: str = No
 
 @app.command()
 def xcorr(sig1: str, sig2: str, title: str = 'Cross Correlation', grid: bool = True, pngfile: str = None,
-          legend: bool = False, linewidth: float = 1.0, minlag: int = None, maxlag: int = None,
+          legend: str = 'UR', linewidth: float = 1.0, minlag: int = None, maxlag: int = None,
           mode: str = 'full', show: bool = False):
     """
     Cross-correlation plots between two signals.
@@ -277,6 +295,8 @@ def xcorr(sig1: str, sig2: str, title: str = 'Cross Correlation', grid: bool = T
     :param mode: The cross-correlation mode to employ (refer to numpy correlate function documentation.)
     :param show: Whether or not to show the plot. If :paramref:`pngfile` is used and this is set to `False`, it will
                  not show the plot and will only save it to a PNG file.
+    :param legend: If not None, will show the legend in the location specified: UR=upper-right, UL=upper-left,
+                   LR=lower-right, or LL=lower-left. By default it's set to UR (upper-right).
     """
     from . import data
     data_aux = common.data_aux
@@ -328,8 +348,15 @@ def xcorr(sig1: str, sig2: str, title: str = 'Cross Correlation', grid: bool = T
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    if legend is True:
-        fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+    if legend is not False:
+        if legend == 'UR' or legend is True:
+            fig.legend(loc='upper right', bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+        elif legend == 'UL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes)
+        elif legend == 'BL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 0), bbox_transform=ax.transAxes)
+        elif legend == 'BR':
+            fig.legend(loc='upper left', bbox_to_anchor=(1, 0), bbox_transform=ax.transAxes)
     if title is not None:
         plt.title(title)
     if pngfile is not None:
@@ -342,7 +369,7 @@ def xcorr(sig1: str, sig2: str, title: str = 'Cross Correlation', grid: bool = T
 
 @app.command()
 def phasecorr(sig1: str, sig2: str, title: str = 'Phase Correlation', grid: bool = True, pngfile: str = None,
-              legend: bool = False, linewidth: float = 1.0):
+              legend: str = 'UR', linewidth: float = 1.0):
     r"""
     Phase correlation analysis plot.
 
@@ -353,6 +380,8 @@ def phasecorr(sig1: str, sig2: str, title: str = 'Phase Correlation', grid: bool
     :param pngfile: If not `None`, will save the plot to a PNG file whose location is given by this parameter.
     :param legend: If set to `True`, will show the legend of the signals plotted.
     :param linewidth: The width of the signal lines (by default set to 1.0).
+    :param legend: If not None, will show the legend in the location specified: UR=upper-right, UL=upper-left,
+                   LR=lower-right, or LL=lower-left. By default it's set to UR (upper-right).
     """
     from . import data
     data_aux = common.data_aux
@@ -412,8 +441,15 @@ def phasecorr(sig1: str, sig2: str, title: str = 'Phase Correlation', grid: bool
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
 
-    if legend is True:
-        fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+    if legend is not False:
+        if legend == 'UR' or legend is True:
+            fig.legend(loc='upper right', bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes)
+        elif legend == 'UL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 1), bbox_transform=ax.transAxes)
+        elif legend == 'BL':
+            fig.legend(loc='upper left', bbox_to_anchor=(0, 0), bbox_transform=ax.transAxes)
+        elif legend == 'BR':
+            fig.legend(loc='upper left', bbox_to_anchor=(1, 0), bbox_transform=ax.transAxes)
     if title is not None:
         plt.title(title)
     if pngfile is not None:
