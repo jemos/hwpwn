@@ -1,13 +1,10 @@
 import yaml
 import typer
-import colorama
 
 from . import common
 from . import data
 from . import plot
 from . import flow
-
-colorama.init()
 
 
 app = typer.Typer(callback=common.default_typer_callback)
