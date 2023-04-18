@@ -28,7 +28,7 @@ dictionary) is shared between the commands and has the following attributes:
 * `triggers` a list of triggers.
 * `ts` the sample period.
 
-For more information refer to the `common` module documentation (:ref:`common`).
+For more information refer to the :doc:`common module documentation</common>`.
 """
 
 import gzip
