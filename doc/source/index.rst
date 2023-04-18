@@ -31,7 +31,28 @@ To install simply use pip command as installing a normal python package.
    $ pip install hwpwn
    ...
 
-To learn more about how to use this tool, refer to the Quick Start section.
+Alternatively, you can run from the source code repository by using poetry. First
+clone the repository or download a release and unpack it. Then, use poetry to install
+the dependencies in an isolated virtual environment.
+
+.. code-block::
+
+   $ poetry install
+   ...
+
+To run, either activate the environment and use hwpwn or open through poetry shell:
+
+.. code-block::
+
+   $ poetry shell
+   Spawning shell within /.../virtualenvs/hwpwn-r0YptyQf-py3.9
+   bash-5.1$ . /.../virtualenvs/hwpwn-r0YptyQf-py3.9/bin/activate
+   (hwpwn-py3.9) bash-5.1$ hwpwn --help
+
+    Usage: hwpwn [OPTIONS] COMMAND [ARGS]...
+   ...
+
+Now that the tool is installed, head to Quick Start for some basic steps on using it.
 
 .. toctree::
    :maxdepth: 2
