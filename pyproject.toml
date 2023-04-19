@@ -6,6 +6,9 @@ authors = ["jemos <contact@jemos.net>"]
 license = "MIT License"
 readme = "README.md"
 
+[tool.poetry.extras]
+docs = ["sphinx", "sphinx_rtd_theme", "sphinx-toolbox", "sphinx-paramlinks"]
+
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
 typer = {version = "^0.7.0", extras = ["all"]}
@@ -19,12 +22,6 @@ colorama = "^0.4.6"
 furo = "^2023.3.27"
 
 [tool.poetry.dev-dependencies]
-Sphinx = "^6.1.3"
-sphinx-toolbox = "^3.4.0"
-sphinx-paramlinks = "^0.5.4"
-sphinx-rtd-theme = "^1.2.0"
-
-[tool.poetry.docs-dependencies]
 Sphinx = "^6.1.3"
 sphinx-toolbox = "^3.4.0"
 sphinx-paramlinks = "^0.5.4"
