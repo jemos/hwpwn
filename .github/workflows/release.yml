@@ -11,6 +11,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install towncrier
+
+      - name: Generate Changelog
+        run: |
+          towncrier build --yes
+          git restore --staged CHANGELOG.md
+
+      - name: Extract Latest Changelog
+        id: extract_changelog
+        run: |
+          LATEST_CHANGELOG=$(awk '/^Hwpwn/{if (found) {exit} else {found=1}} found' CHANGELOG.rst)
+          echo "::set-output name=latest_changelog::$LATEST_CHANGELOG"
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -19,5 +40,5 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          body: |
-            Release ${{ github.ref }} is available.
+          body: ${{ steps.extract_changelog.outputs.latest_changelog }}
+
