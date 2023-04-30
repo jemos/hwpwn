@@ -167,10 +167,10 @@ def finish(data: dict):
     data_aux = data
     if sys.stdout.isatty():
         logging.info("Note: use a pipe if you want to see the output of the command.")
-        return
+        return data_aux
 
     if 'multicommand' in cfg and cfg['multicommand'] is True:
         if f_verbose:
             print(json.dumps(data))
-        else:
-            return
+
+    return data_aux
