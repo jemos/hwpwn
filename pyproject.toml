@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hwpwn"
-version = "0.1.2"
+version = "0.1.3"
 description = "Hardware security testing tool"
 authors = ["jemos <contact@jemos.net>"]
 license = "MIT License"
@@ -39,6 +39,7 @@ docs = ["sphinx", "sphinx_rtd_theme", "sphinx-toolbox", "sphinx-paramlinks"]
 
 [tool.poetry.group.dev.dependencies]
 towncrier = "^22.12.0"
+toml = "^0.10.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -48,7 +49,9 @@ build-backend = "poetry.core.masonry.api"
 hwpwn = "hwpwn.hwpwn:app"
 
 [tool.towncrier]
-directory = "changes"
+directory = "changelog"
 package = "hwpwn"
 package_dir = "hwpwn"
-filename = "NEWS.md"
+filename = "CHANGELOG.md"
+underlines = ["=", "-"]
+issue_format = "{issue} ({pr})"
