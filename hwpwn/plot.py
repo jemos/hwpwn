@@ -19,7 +19,7 @@ app = typer.Typer(callback=common.default_typer_callback)
 @app.command()
 def time(title: str = None, grid: bool = True, pngfile: str = None, legend: str = 'UR' or bool, alpha: float = 1.0,
          ylabel: str = 'x', yscale: float = 1.0, xunit: str = 'NA', yunit: str = 'NA', xlabel: str = 'Time',
-         linewidth: float = 1.0, show: bool = True, xstart: float = None, xend: float = None):
+         linewidth: float = 1.0, show: bool = True, xstart: float = None, xend: float = None, dpi: int = 100):
     r"""
     Time-series plot of the data. The x-axis in the data is used as the time-series axis for all the signals and
     triggers. This command supports providing multiple parameters but all are optional.
@@ -57,7 +57,7 @@ def time(title: str = None, grid: bool = True, pngfile: str = None, legend: str 
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     pltcolor = iter(cm.rainbow(np.linspace(0, 1, len(data['signals']) + len(data['triggers']) + 1)))
-    fig, ax = plt.subplots(dpi=300)
+    fig, ax = plt.subplots(dpi=dpi)
 
     if grid is True:
         common.info("enabling grid.")
