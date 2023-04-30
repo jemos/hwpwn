@@ -35,7 +35,7 @@ from ruamel.yaml import YAML
 
 from . import common
 
-app = typer.Typer(callback=common.default_typer_callback)
+app = typer.Typer()
 
 
 def float_constructor(loader, node):
@@ -59,8 +59,8 @@ def run(filepath: str):
     opts = flowraw['options'] if 'options' in flowraw else {}
     steps = flowraw['operations']
 
-    # Set multicommand flag to inform hwpwn that multiple commands will be executed by this process.
-    opts['multicommand'] = True
+    # Set data_out flag to False to ensure no data is forwarded to stdout
+    opts['data_out'] = False
 
     # Load configuration from the YAML file
     common.config_from_data(opts)

@@ -35,6 +35,8 @@ examplified in the quick start).
 """
 
 import logging
+from pprint import pprint
+from typing import Any
 
 import typer
 import os
@@ -42,7 +44,7 @@ import yaml
 import json
 import sys
 
-cfg = {'scale': 1.0, 'ts': 1.0}
+cfg = {'scale': 1.0, 'ts': 1.0, 'data_out': True}
 data_aux = None
 f_verbose = False
 
@@ -65,10 +67,12 @@ def config_from_data(config: dict):
         cfg['ts'] = float(config['ts'])
     if 'scale' in config:
         cfg['scale'] = float(config['scale'])
+    if 'data_out' in config:
+        cfg['data_out'] = bool(config['data_out'])
     return
 
 
-def config_get(name: str, default: any = None, fail_on_missing: bool = True):
+def config_get(name: str, default: Any = None, fail_on_missing: bool = True):
     global cfg
     if name in cfg:
         return cfg[name]
@@ -77,6 +81,13 @@ def config_get(name: str, default: any = None, fail_on_missing: bool = True):
             return error(f"trying to use a configuration parameter ({name}) which was not defined,"
                          f" refer to help to know how to define configuration parameters.")
         return default
+
+
+def config_set(name: str, value: Any):
+    global cfg
+    old_value = cfg[name] if name in cfg else None
+    cfg[name] = value
+    return old_value
 
 
 def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -98,6 +109,8 @@ def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"
         file_handler.setFormatter(logging.Formatter(log_format))
         logging.getLogger().addHandler(file_handler)
 
+    logging.info("Default typer callback called.")
+
     # Override scale if it's provided in the options.
     if scale is not None:
         cfg['scale'] = scale
@@ -106,19 +119,24 @@ def default_typer_callback(verbose: bool = typer.Option(False, "--verbose", "-v"
     if ts is not None:
         cfg['ts'] = ts
 
-    if sys.stdin.isatty():
+    if sys.stdin.isatty() is True:
+        logging.info(f"Not reading data from stdin because it's not piped.")
         return
 
     stdin = sys.stdin.read().lstrip()
     if not len(stdin):
+        logging.info(f"There's no data from stdin. Default typer callback finished.")
         return
-    logging.info("loading data from stdin...")
+
+    logging.info(f"Trying to load data ({len(stdin)} bytes) from stdin ...")
     try:
         data_aux = json.loads(stdin)
     except json.JSONDecodeError as e:
         logging.error(f"Error decoding JSON input: {e}")
     if not validate_data(data_aux):
         logging.error(f"Input data did not pass validation tests!")
+
+    logging.info(f"Loaded JSON from stdin successfuly. Default typer callback finished.")
 
 
 def validate_data(datatest: dict):
@@ -161,16 +179,27 @@ def info(*args):
 def finish(data: dict):
     r"""
     This function should be called whenever a command has completed. It will store the data passed by :paramref:`data`
-    in the local `data_aux` variable to persist across sequential command calls in the same process.
+    in the local `data_aux` variable to persist across sequential command calls in the same process. This will happen
+    for example in scripts that use hwpwn as a library and by the `flow` commands.
+
+    If the configuration variable `data_out` is set to False, the finish command will not send the data to stdout
+    in any case. Usually, we only want to output data to stdout when piping between multiple commands.
     """
     global data_aux, f_verbose, cfg
     data_aux = data
-    if sys.stdout.isatty():
-        logging.info("Note: use a pipe if you want to see the output of the command.")
+
+    data_out = config_get('data_out', None, fail_on_missing=False)
+
+    if sys.stdout.isatty() is True:
+        logging.info("Command finishing and is not piped (not printing data).")
         return data_aux
 
-    if 'multicommand' in cfg and cfg['multicommand'] is True:
-        if f_verbose:
-            print(json.dumps(data))
+    logging.info("Command finishing and is piped.")
+
+    if data_out is True:
+        logging.info("The data_out configuration parameter is set to True, sending data to stdout...")
+        print(json.dumps(data_aux))
+    else:
+        logging.info("The data_out configuration parameter is set to False, not sending data to stdout.")
 
     return data_aux

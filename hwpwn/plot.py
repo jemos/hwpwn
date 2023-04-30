@@ -13,7 +13,7 @@ from scipy import signal
 
 from . import common
 
-app = typer.Typer(callback=common.default_typer_callback)
+app = typer.Typer()
 
 
 @app.command()

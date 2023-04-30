@@ -46,7 +46,7 @@ import pywt
 
 from . import common
 
-app = typer.Typer(callback=common.default_typer_callback)
+app = typer.Typer()
 
 
 def gaussian_periodic_penalty(lag: int, period: int, sigma: float):
@@ -538,17 +538,31 @@ def load_csv(filepath: str, xscale: float = 1e-6):
     and `xscale` is 1e-9 (meaning that the x-axis values units are in nanoseconds), and the CSV has the x-axis
     (230.0, 250.0, 410.0) the data stored in memory will have the x-axis values (0.230, 0.250, 0.410).
     """
+    # Read CSV file and store header and raw_data
     with open(filepath, "r") as f:
-        cr = csv.reader(f)
-        header = next(cr)
-        raw_data = list(cr)
+        csv_reader = csv.reader(f)
+        header = next(csv_reader)
+        raw_data = list(csv_reader)
 
+    # Log the number of data points loaded
     common.info(f"loaded {len(raw_data)} datapoints from {filepath}.")
-    sigs, trigs = process_raw_table_signals(header=header, raw_data=raw_data)
-    new_ts = process_raw_table_ts(raw_data=raw_data, xscale=xscale)
-    x_axis = np.multiply([float(raw_data[i][0]) for i in range(0, len(raw_data))], new_ts)
 
-    return {'x_axis': x_axis, 'signals': sigs, 'triggers': trigs, 'ts': new_ts}
+    # Process signal_data and trigger_data from raw_data
+    signal_data, trigger_data = process_raw_table_signals(header=header, raw_data=raw_data)
+
+    # Get timestamp from raw_data
+    data_ts = process_raw_table_ts(raw_data=raw_data, xscale=xscale)
+
+    # Compute x-axis values
+    x_axis = list(np.multiply([float(raw_data[i][0]) for i in range(len(raw_data))], data_ts))
+
+    # Return the results in a dictionary
+    return {
+        'x_axis': x_axis,
+        'signals': signal_data,
+        'triggers': trigger_data,
+        'ts': data_ts
+    }
 
 
 @app.command(help="This command is very similar to the load_csv command, except that the CSV file is compressed using "
