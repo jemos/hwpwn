@@ -508,7 +508,7 @@ def process_raw_table_signals(header: list[str], raw_data: list[list]):
         tv = [float(raw_data[j][i]) for j in range(0, len(raw_data))]
         sigs.append({'name': header[i], 'vector': tv})
 
-    return signals, triggers
+    return sigs, trigs
 
 
 @app.command(help="Loads a CSV file into a data structure that is easier to use for signal processing and plotting. "
@@ -632,7 +632,7 @@ def load(filepath: str, format: str = 'auto', xscale: float = 1e-6, append: bool
     else:
         raise ValueError(f"Invalid or unsupported file extension ({filetype})!")
 
-    common.finish(data_aux)
+    return common.finish(data_aux)
 
 
 @app.command(help="Saves the current data to a file. By default the format is compressed CSV file (csv.gz).")
