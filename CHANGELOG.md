@@ -1,3 +1,12 @@
+hwpwn 0.1.5 (2023-05-01)
+========================
+
+Bugfixes
+--------
+
+- Bug fix in GitHub action for package release.
+
+
 hwpwn 0.1.4 (2023-05-01)
 ========================
 
