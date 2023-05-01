@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hwpwn"
-version = "0.1.4"
+version = "0.1.5"
 description = "Hardware security testing tool"
 authors = ["jemos <contact@jemos.net>"]
 license = "MIT License"

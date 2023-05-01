@@ -21,15 +21,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install towncrier
 
-      - name: Generate Changelog
-        run: |
-          towncrier build --yes
-          git restore --staged CHANGELOG.md
-
       - name: Extract Latest Changelog
         id: extract_changelog
         run: |
-          LATEST_CHANGELOG=$(awk '/^Hwpwn/{if (found) {exit} else {found=1}} found' CHANGELOG.rst)
+          LATEST_CHANGELOG=$(awk '/^hwpwn/{if (found) {exit} else {found=1; getline; getline; next}} found' CHANGELOG.md)
           echo "::set-output name=latest_changelog::$LATEST_CHANGELOG"
 
       - name: Create Release
